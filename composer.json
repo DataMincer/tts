@@ -13,7 +13,6 @@
   "type": "library",
   "prefer-stable": true,
   "require":  {
-    "onkeltem/generic-logger": "dev-master",
     "aws/aws-sdk-php": "^3.0@dev"
   },
   "require-dev": {
