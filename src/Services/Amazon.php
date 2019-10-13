@@ -10,6 +10,13 @@ use Aws\Exception\AwsException;
 use Aws\Polly\PollyClient;
 use DataMincerCore\Util;
 
+/**
+ * @property boolean cache
+ * @property string cachePath
+ * @property array requestOptions
+ * @property array clientOptions
+
+ */
 class Amazon extends PluginServiceBase implements TtsPluginInterface {
 
   protected static $pluginId = 'tts.amazon';
@@ -28,7 +35,7 @@ class Amazon extends PluginServiceBase implements TtsPluginInterface {
      * https://docs.aws.amazon.com/sdk-for-php/v3/developer-guide/guide_credentials.html
      */
     // Create a PollyClient
-    $this->client = new PollyClient($this->config['clientOptions']);
+    $this->client = new PollyClient($this->clientOptions);
   }
 
   /**
@@ -38,14 +45,14 @@ class Amazon extends PluginServiceBase implements TtsPluginInterface {
    * @throws PluginException
    */
   function synthesize($text, $options) {
-    $use_cache = boolval($this->config['cache'] ?? FALSE);
+    $use_cache = boolval($this->cache ?? FALSE);
     // TODO: Add logger with log levels
     if ($use_cache) {
       $cache_dir = $this->getCacheDir();
     }
     $data = NULL;
     try {
-      $request_options = ['Text' => $text] + Util::arrayMergeDeep($options, $this->config['requestOptions'], TRUE);
+      $request_options = ['Text' => $text] + Util::arrayMergeDeep($options, $this->requestOptions, TRUE);
       // Stringify options as Polly wants strings
       $request_options = array_map('strval', $request_options);
       $request_id = $this->getRequestHash($request_options);
@@ -92,8 +99,8 @@ class Amazon extends PluginServiceBase implements TtsPluginInterface {
   }
 
   protected function getCachePath() {
-    if (array_key_exists('cachePath', $this->config)) {
-      $sys_temp_dir = $this->config['cachePath'];
+    if (isset($this->cachePath)) {
+      $sys_temp_dir = $this->cachePath;
     }
     else {
       $sys_temp_dir = sys_get_temp_dir();

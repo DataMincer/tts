@@ -29,7 +29,7 @@ class Tts extends PluginFieldBase {
     if (!$result) {
       $this->error("Received not valid XML:\n\n$text\n");
     }
-    $tts = current($this->dependencies['service']);
+    $tts = current($this->_dependencies['service']);
     $_probe_name = "TTS {$tts->name}({$tts::pluginId()})";
     Timer::begin($_probe_name);
     $result = $tts->synthesize($text, $this->requestOptions);
