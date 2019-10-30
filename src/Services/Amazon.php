@@ -15,7 +15,6 @@ use DataMincerCore\Util;
  * @property string cachePath
  * @property array requestOptions
  * @property array clientOptions
-
  */
 class Amazon extends PluginServiceBase implements TtsPluginInterface {
 
@@ -26,7 +25,8 @@ class Amazon extends PluginServiceBase implements TtsPluginInterface {
    */
   protected $client;
 
-  const VERSION = '2016-06-10';
+  const CLIENT_VERSION = '2016-06-10';
+  const CACHE_BIN = 'amazon.polly';
 
   public function initialize() {
     parent::initialize();
@@ -46,28 +46,17 @@ class Amazon extends PluginServiceBase implements TtsPluginInterface {
    */
   function synthesize($text, $options) {
     $use_cache = boolval($this->cache ?? FALSE);
-    // TODO: Add logger with log levels
-    if ($use_cache) {
-      $cache_dir = $this->getCacheDir();
-    }
     $data = NULL;
     try {
       $request_options = ['Text' => $text] + Util::arrayMergeDeep($options, $this->requestOptions, TRUE);
       // Stringify options as Polly wants strings
       $request_options = array_map('strval', $request_options);
       $request_id = $this->getRequestHash($request_options);
-      if ($use_cache) {
-        /** @noinspection PhpUndefinedVariableInspection */
-        if (file_exists($cache_file_name = $cache_dir . '/' . $request_id)) {
-          try {
-            $data = unserialize(file_get_contents($cache_file_name));
-          }
-          catch (Exception $e) {
-            $this->error('Cannot read file contents: ' . $cache_file_name . "\n" . $e->getMessage());
-          }
-          /** @noinspection PhpUndefinedVariableInspection */
-          return $data;
-        }
+      if ($use_cache
+          && $this->cacheManager->exists($request_id, self::CACHE_BIN)
+          && ($data = $this->cacheManager->getData($request_id, self::CACHE_BIN)) &&
+          $data !== FALSE) {
+        return $data;
       }
       $result = $this->client->synthesizeSpeech($request_options);
       $data = [
@@ -76,8 +65,7 @@ class Amazon extends PluginServiceBase implements TtsPluginInterface {
         'mime' => $result->get('ContentType')
       ];
       if ($use_cache) {
-        /** @noinspection PhpUndefinedVariableInspection */
-        file_put_contents($cache_file_name, serialize($data));
+        $this->cacheManager->setData($request_id, $data, self::CACHE_BIN);
       }
     } catch (AwsException $e) {
       $this->error($e->getMessage());
@@ -131,14 +119,14 @@ class Amazon extends PluginServiceBase implements TtsPluginInterface {
 
   protected function defaultSynthesizeOptions() {
     return [
-      'version' => self::VERSION
+      'version' => self::CLIENT_VERSION
     ];
   }
 
   static function defaultConfig($data = NULL) {
     return [
       'clientOptions' => [
-        'version' => self::VERSION,
+        'version' => self::CLIENT_VERSION,
       ],
       'requestOptions' => [
         'SampleRate' => 16000,
