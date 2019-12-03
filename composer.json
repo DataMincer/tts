@@ -10,12 +10,8 @@
     }
   ],
   "type": "library",
-  "prefer-stable": true,
   "require":  {
-    "aws/aws-sdk-php": "^3.0@dev"
-  },
-  "require-dev": {
-    "datamincer/core": "dev-master"
+    "aws/aws-sdk-php": "^3.124.0"
   },
   "autoload": {
     "psr-4": {
